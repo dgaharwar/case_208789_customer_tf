@@ -48,6 +48,16 @@ variable "admin_password" {
   sensitive = true
 }
 
+variable "agent_install" {}
+variable "finalize_server" {}
+
+locals {
+  cloud_config = templatefile("cloud-config.tpl", {
+    agent_install  = var.agent_install
+    finalize_server = var.finalize_server
+  })
+}
+
 data "azurerm_subnet" "default" {
   name                 = "default"
   virtual_network_name = "rmg-ops"
@@ -90,13 +100,14 @@ resource "azurerm_linux_virtual_machine" "example" {
   provision_vm_agent = true
 
   # Custom cloud-init data
-  custom_data = base64encode(<<-EOF
+  custom_data = base64encode(local.cloud_config)
+  #custom_data = base64encode(<<-EOF
     #cloud-config
-    runcmd:
-    - <%=instance.cloudConfig.agentInstall%>
-    - <%=instance.cloudConfig.finalizeServer%>
-    EOF
-  )
+  #  runcmd:
+  #  - <%=instance.cloudConfig.agentInstall%>
+  #  - <%=instance.cloudConfig.finalizeServer%>
+ #   EOF
+ # )
 }
 
 output "subnet_id" {
